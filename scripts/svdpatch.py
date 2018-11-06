@@ -98,7 +98,7 @@ def make_write_constraint(wc_range):
     minimum.text = str(wc_range[0])
     maximum = ET.SubElement(r, 'maximum')
     maximum.text = str(wc_range[1])
-    wc.tail = "\r\n            "
+    wc.tail = "\n            "
     return wc
 
 
@@ -108,7 +108,11 @@ def make_enumerated_values(name, values, usage="read-write"):
     description), returns an enumeratedValues Element.
     """
     ev = ET.Element('enumeratedValues')
-    ET.SubElement(ev, 'name').text = name
+    usagekey = {
+        "read": "R",
+        "write": "W",
+    }.get(usage, "")
+    ET.SubElement(ev, 'name').text = name + usagekey
     ET.SubElement(ev, 'usage').text = usage
     if len(set(v[0] for v in values.values())) != len(values):
         raise ValueError("enumeratedValue {}: can't have duplicate values"
@@ -124,22 +128,24 @@ def make_enumerated_values(name, values, usage="read-write"):
         ET.SubElement(el, 'name').text = vname
         ET.SubElement(el, 'description').text = description
         ET.SubElement(el, 'value').text = str(value)
-    ev.tail = "\r\n            "
+    ev.tail = "\n            "
     return ev
 
 
 def make_derived_enumerated_values(name):
     """Returns an enumeratedValues Element which is derivedFrom name."""
     evd = ET.Element('enumeratedValues', {"derivedFrom": name})
-    evd.tail = "\r\n            "
+    evd.tail = "\n            "
     return evd
 
 
-def iter_peripherals(tree, pspec):
+def iter_peripherals(tree, pspec, check_derived=True):
     """Iterates over all peripherals that match pspec."""
     for ptag in tree.iter('peripheral'):
         name = ptag.find('name').text
-        if matchname(name, pspec) and "derivedFrom" not in ptag.attrib:
+        if matchname(name, pspec):
+            if check_derived and "derivedFrom" in ptag.attrib:
+                continue
             yield ptag
 
 
@@ -211,6 +217,10 @@ def process_register_modify(rtag, fspec, fmod):
 def process_device_add(device, pname, padd):
     """Add pname given by padd to device."""
     parent = device.find('peripherals')
+    for ptag in parent.iter('peripheral'):
+        if ptag.find('name').text == pname:
+            raise SvdPatchError('device already has a peripheral {}'
+                                .format(pname))
     pnew = ET.SubElement(parent, 'peripheral')
     ET.SubElement(pnew, 'name').text = pname
     ET.SubElement(pnew, 'registers')
@@ -227,11 +237,16 @@ def process_device_add(device, pname, padd):
                 ET.SubElement(ab, ab_key).text = str(ab_value)
         else:
             ET.SubElement(pnew, key).text = str(value)
+    pnew.tail = "\n    "
 
 
 def process_peripheral_add_reg(ptag, rname, radd):
     """Add rname given by radd to ptag."""
     parent = ptag.find('registers')
+    for rtag in parent.iter('register'):
+        if rtag.find('name').text == rname:
+            raise SvdPatchError('peripheral {} already has a register {}'
+                                .format(ptag.find('name').text, rname))
     rnew = ET.SubElement(parent, 'register')
     ET.SubElement(rnew, 'name').text = rname
     ET.SubElement(rnew, 'fields')
@@ -241,23 +256,52 @@ def process_peripheral_add_reg(ptag, rname, radd):
                 process_register_add(rnew, fname, value[fname])
         else:
             ET.SubElement(rnew, key).text = str(value)
+    rnew.tail = "\n        "
 
 
 def process_peripheral_add_int(ptag, iname, iadd):
     """Add iname given by iadd to ptag."""
+    for itag in ptag.iter('interrupt'):
+        if itag.find('name').text == iname:
+            raise SvdPatchError('peripheral {} already has an interrupt {}'
+                                .format(ptag.find('name').text, iname))
     inew = ET.SubElement(ptag, 'interrupt')
     ET.SubElement(inew, 'name').text = iname
     for key, val in iadd.items():
         ET.SubElement(inew, key).text = str(val)
+    inew.tail = "\n    "
 
 
 def process_register_add(rtag, fname, fadd):
     """Add fname given by fadd to rtag."""
     parent = rtag.find('fields')
+    for ftag in parent.iter('field'):
+        if ftag.find('name').text == fname:
+            raise SvdPatchError('register {} already has a field {}'
+                                .format(rtag.find('name').text, fname))
     fnew = ET.SubElement(parent, 'field')
     ET.SubElement(fnew, 'name').text = fname
     for (key, value) in fadd.items():
         ET.SubElement(fnew, key).text = str(value)
+    fnew.tail = "\n            "
+
+
+def process_device_delete(device, pspec):
+    """Delete registers matched by rspec inside ptag."""
+    for ptag in list(iter_peripherals(device, pspec, check_derived=False)):
+        device.find('peripherals').remove(ptag)
+
+
+def process_peripheral_delete(ptag, rspec):
+    """Delete registers matched by rspec inside ptag."""
+    for rtag in list(iter_registers(ptag, rspec)):
+        ptag.find('registers').remove(rtag)
+
+
+def process_register_delete(rtag, fspec):
+    """Delete fields matched by fspec inside rtag."""
+    for ftag in list(iter_fields(rtag, fspec)):
+        rtag.find('fields').remove(ftag)
 
 
 class SvdPatchError(ValueError):
@@ -328,8 +372,17 @@ def process_field_enum(pname, rtag, fspec, field, usage="read-write"):
         name = ftag.find('name').text
         if derived is None:
             enum = make_enumerated_values(name, field, usage=usage)
+            enum_name = enum.find('name').text
+            enum_usage = enum.find('usage').text
+            for ev in ftag.iter('enumeratedValues'):
+                ev_usage = ev.find('usage').text
+                if ev_usage == enum_usage or ev_usage == "read-write":
+                    print(pname, fspec, field)
+                    raise SvdPatchError(
+                        "{}: field {} already has enumeratedValues for {}"
+                        .format(pname, name, ev_usage))
             ftag.append(enum)
-            derived = make_derived_enumerated_values(name)
+            derived = make_derived_enumerated_values(enum_name)
         else:
             ftag.append(derived)
     if derived is None:
@@ -373,6 +426,9 @@ def process_peripheral_register(ptag, rspec, register, update_fields=True):
     rcount = 0
     for rtag in iter_registers(ptag, rspec):
         rcount += 1
+        # Handle deletions
+        for fspec in register.get("_delete", []):
+            process_register_delete(rtag, fspec)
         # Handle modifications
         for fspec in register.get("_modify", []):
             fmod = register["_modify"][fspec]
@@ -404,6 +460,9 @@ def process_peripheral(svd, pspec, peripheral, update_fields=True):
     pcount = 0
     for ptag in iter_peripherals(svd, pspec):
         pcount += 1
+        # Handle deletions
+        for rspec in peripheral.get("_delete", []):
+            process_peripheral_delete(ptag, rspec)
         # Handle modifications
         for rspec in peripheral.get("_modify", {}):
             rmod = peripheral["_modify"][rspec]
@@ -431,6 +490,11 @@ def process_peripheral(svd, pspec, peripheral, update_fields=True):
 
 def process_device(svd, device, update_fields=True):
     """Work through a device, handling all peripherals"""
+
+    # Handle any deletions
+    for pspec in device.get("_delete", []):
+        process_device_delete(svd, pspec)
+
     # Handle any modifications
     for key in device.get("_modify", {}):
         val = device["_modify"][key]
