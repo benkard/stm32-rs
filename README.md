@@ -1,13 +1,15 @@
 # STM32 Crates
 
-This repository contains device support for as many STM32 devices as possible,
+_formerly [adamgreig/stm32-rs](https://github.com/adamgreig/stm32-rs)_
+
+This repository contains device support for all STM32 microcontrollers,
 providing a safe API to that device using [svd2rust] and an extensive hierarchy
 of SVD patches. Each supported device is a feature-gated module in a crate for
 that device family.
 
-[svd2rust]: https://github.com/japaric/svd2rust
+[svd2rust]: https://github.com/rust-embedded/svd2rust
 
-**Please note most parts of most libraries will not have been tested on every
+**Please note many parts of most libraries will not have been tested on every
 possible chip yet! While they're all generated from ST-provided SVD files,
 we can't make any guarantee of correctness. Please report any bugs you find!**
 
@@ -22,7 +24,7 @@ to drill down into each field on each register on each peripheral.
 In your own project's `Cargo.toml`:
 ```toml
 [dependencies.stm32f4]
-version = "0.1.1"
+version = "0.4.0"
 features = ["stm32f405", "rt"]
 ```
 The `rt` feature is optional but helpful. See
@@ -201,6 +203,13 @@ _add:
                 description: ADC global interrupt
                 value: 18
 
+# Reorder the heirarchy of peripherals with 'deriveFrom'.
+_rebase:
+    # The KEY peripheral steals everything but 'interrupt', 'name',
+    # and 'baseAddress' elements from the VALUE peripheral.
+    # Peripherals that were 'deriveFrom="VALUE"' are now 'deriveFrom="KEY"'.
+    I2C1: I2C3
+
 # An STM32 peripheral, matches an SVD <peripheral> tag.
 # Does not match any tag with derivedFrom attribute set.
 "GPIO*":
@@ -313,6 +322,23 @@ You must quote the name if using any special characters in YAML.
 * Enumerated values should be named in the past tense ("enabled", "masked",
   etc).
 * Descriptions should start with capital letters but do not end with a period
+
+## Releasing
+
+```
+$ make -j16 form
+$ make -j16 check
+$ vi scripts/makecrates.py # update version number
+$ python3 scripts/makecrates.py devices/
+$ vi CHANGELOG.md # add changelog entry
+$ git commit -am "vX.X.X"
+$ git push origin master
+# wait for travis build to succeed
+$ git tag -a 'vX.X.X' -m 'vX.X.X'
+$ git push origin vX.X.X
+$ git push origin master
+$ for f in stm32f0 stm32f1 stm32f2 stm32f3 stm32f4 stm32f7 stm32h7 stm32l0 stm32l1 stm32l4; cd $f; pwd; carg o publish --allow-dirty; cd ..; end
+```
 
 ## License
 

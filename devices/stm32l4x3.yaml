@@ -1,5 +1,13 @@
 _svd: ../svd/stm32l4x3.svd
 
+# SVD incorrectly labels APB1ENR1 bit 26 as USBF instead of USBFSEN.
+RCC:
+  APB1ENR1:
+    _modify:
+      USBF:
+        name: USBFSEN
+        description: USB FS clock enable
+
 # Merge the thousands of individal bit fields into a single field for each
 # CAN filter register. This is not only much easier to use but also saves
 # a huge amount of filespace and compilation time etc -- as much as 30% of all
@@ -27,6 +35,7 @@ _include:
  - ../peripherals/gpio/gpio_v2.yaml
  - ../peripherals/crc/crc_basic.yaml
  - ../peripherals/wwdg/wwdg.yaml
+ - ../peripherals/tim/tim_basic.yaml
  - ../peripherals/tim/tim16.yaml
  - ../peripherals/tim/tim6.yaml
  - ../peripherals/tim/tim2_32bit.yaml
