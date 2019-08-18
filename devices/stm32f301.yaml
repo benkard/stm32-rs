@@ -1,5 +1,17 @@
 _svd: ../svd/stm32f301.svd
 
+_add:
+  I2C3:
+    derivedFrom: I2C1
+    baseAddress: "0x40007800"
+    interrupts:
+      I2C3_EV_IRQ:
+        description: I2C3 event interrupt / EXTI Line27 interrupt
+        value: 72
+      I2C3_ER_IRQ:
+        description: I2C3 error interrupt
+        value: 73
+
 # The SVD puts CSR and CCR at 0x0 and 0x8 offset, which is their offset
 # for a common ADC peripheral which is 0x300 above ADC, but this peripheral
 # isn't defined in the SVD and instead the fields are described as aliasing
@@ -20,23 +32,69 @@ _svd: ../svd/stm32f301.svd
       TIFRFE:
         name: "FRE"
 
+RCC:
+  CFGR3:
+    _modify:
+      TIM17SW:
+        bitWidth: 1
+
+SYSCFG:
+  _delete:
+    - SYSCFG_RCR
+    - SYSCFG_CFGR3
+  CFGR1:
+    _delete:
+      - USB_IT_RMP
+      - DAC_TRIG_RMP
+      - ADC24_DMA_RMP
+      - TIM7_DAC2_DMA_RMP
+  CFGR2:
+    _delete:
+      - LOCUP_LOCK
+      - SRAM_PARITY_LOCK
+      - BYP_ADD_PAR
+      - SRAM_PEF
+
 _include:
  - common_patches/4_nvic_prio_bits.yaml
  - ./common_patches/merge_I2C_CR2_SADDx_fields.yaml
  - ./common_patches/merge_I2C_OAR1_OA1x_fields.yaml
  - ./common_patches/merge_USART_CR2_ADDx_fields.yaml
  - ./common_patches/merge_USART_BRR_fields.yaml
+ - ./common_patches/f3_rcc.yaml
+ - ./common_patches/f3_rcc_i2c3.yaml
+ - ./common_patches/f3_rcc_delete_cec.yaml
+ - ./common_patches/f3_syscfg.yaml
+ - ./common_patches/f3_syscfg_cfgr1_i2c3_fmp.yaml
+ - ./common_patches/f3_opamp2.yaml
+ - ./common_patches/f3_comp246.yaml
+ - ./common_patches/f3_comp2_inp_dac.yaml
+ - common_patches/can/can.yaml
+ - common_patches/can/can_filter_bank.yaml
+ - ../peripherals/can/can.yaml
+ - ./common_patches/unprefix_USB_registers.yaml
+ - common_patches/tim/tim_o24ce.yaml
  - ../peripherals/crc/crc_basic.yaml
  - ../peripherals/spi/spi_v2.yaml
- - ../peripherals/spi/spi_common.yaml
  - ../peripherals/wwdg/wwdg.yaml
  - ../peripherals/gpio/gpio_with_brr.yaml
  - ../peripherals/gpio/gpio_v2.yaml
  - ../peripherals/tim/tim_basic.yaml
  - ../peripherals/tim/tim16.yaml
  - ../peripherals/tim/tim6.yaml
- - ../peripherals/tim/tim2_32bit.yaml
+ - ../peripherals/tim/tim2345_mixed.yaml
+ - common_patches/tim/tim2345_mixed.yaml
+ - ../peripherals/rcc/rcc_f3.yaml
+ - ../peripherals/rcc/rcc_f3_i2s.yaml
+ - ../peripherals/rcc/rcc_pllsrc_1bit.yaml
+ - common_patches/dma/dma_v1.yaml
  - ../peripherals/dma/dma_v1.yaml
  - ../peripherals/iwdg/iwdg_with_WINR.yaml
  - ../peripherals/i2c/i2c_v2.yaml
  - ../peripherals/usart/usart_v2B.yaml
+ - common_patches/rtc/rtc_bkpr.yaml
+ - common_patches/tsc/tsc.yaml
+ - common_patches/tim/tim_ccr.yaml
+ - ../peripherals/usb/usb.yaml
+ - common_patches/f3_dbgmcu.yaml
+ - ../peripherals/tim/tim_ccm_v1.yaml

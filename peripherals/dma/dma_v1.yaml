@@ -11,7 +11,7 @@
       NoError: [0, "No transfer error"]
       Error: [1, "A transfer error has occured"]
     "HTIF*":
-      NotHalt: [0, "No half transfer event"]
+      NotHalf: [0, "No half transfer event"]
       Half: [1, "A half transfer event has occured"]
     "TCIF*":
       NotComplete: [0, "No transfer complete event"]
@@ -38,9 +38,9 @@
       High: [2, "High priority"]
       VeryHigh: [3, "Very high priority"]
     "[MP]SIZE":
-      Bit8: [0, "8-bit size"] # or Byte
-      Bit16: [1, "16-bit size"] # of HalfWord
-      Bit32: [2, "32-bit size"] # or Word
+      Bits8: [0, "8-bit size"] # or Byte
+      Bits16: [1, "16-bit size"] # of HalfWord
+      Bits32: [2, "32-bit size"] # or Word
     "[MP]INC":
       Disabled: [0, "Increment mode disabled"]
       Enabled: [1, "Increment mode enabled"]

@@ -3,6 +3,7 @@ _svd: ../svd/stm32f446.svd
 _rebase:
   # Make I2C1 the base type
   I2C1: I2C3
+  USART1: USART6
 
 _modify:
   # The SVD calls this C_ADC in some devices and ADC_Common in others,
@@ -53,33 +54,79 @@ RCC:
         bitOffset: 28
         bitWidth: 1
         access: read-write
+  APB1ENR:
+    _modify:
+      CEC:
+        name: CECEN
   APB2ENR:
     _modify:
       SPI4ENR:
         name: SPI4EN
+  DCKCFGR2:
+    _modify:
+      FMPI2C1SEL:
+        name: I2CFMP1SEL
+      SPDIFSEL:
+        name: SPDIFRXSEL
 
 _include:
  - common_patches/4_nvic_prio_bits.yaml
  - common_patches/merge_I2C_OAR1_ADDx_fields.yaml
  - common_patches/dma_fcr_wo.yaml
+ - common_patches/can/can.yaml
+ - common_patches/can/can_filter_bank.yaml
+ - ../peripherals/can/can.yaml
+ - common_patches/sai/sai_v1.yaml
+ - common_patches/tim/tim_o24ce.yaml
  - ../peripherals/dac/dac_wavegen.yaml
  - ../peripherals/dac/dac_common_2ch.yaml
+ - ../peripherals/dac/dac_dmaudr.yaml
  - ../peripherals/gpio/gpio_v2.yaml
  - ../peripherals/rcc/rcc_merge_sw_sws.yaml
  - ../peripherals/rcc/rcc_v2.yaml
  - ../peripherals/rcc/rcc_v2_i2s.yaml
+ - ../peripherals/rcc/rcc_v2_i2s_pll.yaml
+ - ../peripherals/rcc/rcc_v2_i2s_pllp.yaml
+ - ../peripherals/rcc/rcc_v2_i2s_pllq.yaml
+ - ../peripherals/rcc/rcc_v2_i2s_pllm.yaml
+ - ../peripherals/rcc/rcc_v2_sai_pllp.yaml
+ - ../peripherals/rcc/rcc_v2_bdcr_lsemod.yaml
+ - ../peripherals/rcc/rcc_v2_dckcfgr_timpre.yaml
+ - ../peripherals/rcc/rcc_v2_dckcfgr_i2s_sai_f446.yaml
+ - ../peripherals/rcc/rcc_v2_dckcfgr_i2s12src.yaml
+ - ../peripherals/rcc/rcc_v2_dckcfgr2_48m_sd.yaml
+ - ../peripherals/rcc/rcc_v2_dckcfgr2_cecsel.yaml
+ - ../peripherals/rcc/rcc_v2_dckcfgr2_i2cfmp1sel.yaml
+ - ../peripherals/rcc/rcc_v2_dckcfgr2_spdifrxsel.yaml
+ - ../peripherals/rcc/rcc_v2_ckgatenr.yaml
  - ../peripherals/crc/crc_basic.yaml
  - ../peripherals/adc/adc_v2_smpr.yaml
  - ../peripherals/adc/adc_v2_multi.yaml
+ - common_patches/dma/dma_v2.yaml
  - ../peripherals/dma/dma_v2.yaml
  - ../peripherals/spi/spi_v1.yaml
  - ../peripherals/tim/tim_basic.yaml
- - ../peripherals/tim/tim_gp1.yaml
  - ../peripherals/usart/uart_common.yaml
+ - ../peripherals/usart/uart_sample.yaml
  - ../peripherals/usart/uart_uart.yaml
  - ../peripherals/usart/uart_usart.yaml
  - ../peripherals/i2c/i2c_v1.yaml
  - ../peripherals/wwdg/wwdg.yaml
  - ../peripherals/tim/tim6.yaml
- - ../peripherals/tim/tim2_32bit.yaml
+ - ../peripherals/tim/tim2345_mixed.yaml
+ - common_patches/tim/tim2345_mixed_l.yaml
+ - ../peripherals/tim/tim_advanced.yaml
  - ../peripherals/iwdg/iwdg.yaml
+ - common_patches/rtc/rtc_bkpr.yaml
+ - common_patches/tim/tim_ccr.yaml
+ - common_patches/dbgmcu.yaml
+ - common_patches/fsmc/fsmc_sram.yaml
+ - common_patches/fsmc/fsmc_sramfix.yaml
+ - common_patches/fsmc/fsmc_nand_v1.yaml
+ - common_patches/fsmc/fsmc_sd.yaml
+ - ../peripherals/fsmc/fsmc_sram.yaml
+ - ../peripherals/fsmc/fsmc_wfdis.yaml
+ - ../peripherals/fsmc/fsmc_nand.yaml
+ - ../peripherals/fsmc/fsmc_sd.yaml
+ - ../peripherals/tim/tim_ccm_v1.yaml
+ - ../peripherals/sai/sai.yaml

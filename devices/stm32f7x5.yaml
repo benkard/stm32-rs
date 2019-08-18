@@ -2,6 +2,9 @@
 
 _svd: ../svd/stm32f7x5.svd
 
+_rebase:
+  USART1: USART6
+
 _modify:
   # The SVD calls this C_ADC in some devices and ADC_Common in others,
   # we'll prefer the more sensible (and better for sorting) ADC_Common
@@ -31,14 +34,6 @@ FLASH:
         name: OPTKEYR
 
 RCC:
-  # Add the LSEDRV that's not in the SVD but is in RM0410
-  BDCR:
-    _add:
-      LSEDRV:
-        description: LSE oscillator drive capability
-        bitOffset: 3
-        bitWidth: 2
-        access: read-write
   PLLCFGR:
     _add:
       PLLR:
@@ -46,7 +41,6 @@ RCC:
         bitOffset: 28
         bitWidth: 3
         access: read-write
-    PLLR: [2, 7]
 
 CRC:
   # The SVD calls the RESET field "CR", and misses some fields, fix per RM0410
@@ -127,7 +121,7 @@ CRYP:
 _include:
  - common_patches/4_nvic_prio_bits.yaml
  - common_patches/f7_interrupts.yaml
- - common_patches/f7_pllsai.yaml
+ - common_patches/pllsai.yaml
  - common_patches/dma_fcr_wo.yaml
  - common_patches/ethernet_mac_regs.yaml
  - common_patches/merge_USART_CR1_DEATx_fields.yaml
@@ -136,15 +130,37 @@ _include:
  - common_patches/merge_USART_CR2_ADDx_fields.yaml
  - ./common_patches/rename_USART_CR2_DATAINV_field.yaml
  - common_patches/merge_USART_BRR_fields.yaml
+ - common_patches/can/can.yaml
+ - common_patches/can/can_filter_bank.yaml
+ - ../peripherals/can/can.yaml
+ - common_patches/cryp/cryp_v2.yaml
+ - common_patches/ltdc/ltdc.yaml
+ - common_patches/sai/sai_v1.yaml
+ - common_patches/rcc_add_plli2sp.yaml
+ - common_patches/f7_rcc_apbenr.yaml
+ - common_patches/f7_rcc_lsedrv.yaml
+ - common_patches/f7_rcc_rename_dckcfgr.yaml
+ - common_patches/f7_rcc_dckcfgr.yaml
+ - common_patches/f7_rcc_dckcfgr_sdmmc1.yaml
+ - common_patches/f7_rcc_dckcfgr_RM0410.yaml
+ - common_patches/tim/tim_o24ce.yaml
  - ../peripherals/dac/dac_wavegen.yaml
  - ../peripherals/dac/dac_common_2ch.yaml
+ - ../peripherals/dac/dac_dmaudr.yaml
  - ../peripherals/rcc/rcc_merge_sw_sws.yaml
- - ../peripherals/rcc/rcc_v2.yaml
- - ../peripherals/rcc/rcc_v2_i2s.yaml
+ - ../peripherals/rcc/rcc_f7.yaml
+ - ../peripherals/rcc/rcc_v2_pllcfgr_pllr.yaml
+ - ../peripherals/rcc/rcc_v2_i2s_pllp.yaml
+ - ../peripherals/rcc/rcc_v2_sai_pllr.yaml
+ - ../peripherals/rcc/rcc_v2_dckcfgr_saidivr.yaml
+ - ../peripherals/rcc/rcc_v2_dckcfgr_dfsdm_f7.yaml
+ - ../peripherals/rcc/rcc_v2_dckcfgr_dsisel.yaml
+ - ../peripherals/rcc/rcc_v2_dckcfgr2_cecsel.yaml
  - ../peripherals/rcc/rcc_merge_rtcsel.yaml
  - ../peripherals/gpio/gpio_v2.yaml
  - ../peripherals/crc/crc_basic.yaml
  - ../peripherals/adc/adc_v2_multi.yaml
+ - common_patches/dma/dma_v2.yaml
  - ../peripherals/dma/dma_v2.yaml
  - ../peripherals/spi/spi_v2.yaml
  - ../peripherals/eth/eth_dma.yaml
@@ -156,7 +172,23 @@ _include:
  - ../peripherals/flash/flash_v2.yaml
  - ../peripherals/tim/tim_basic.yaml
  - ../peripherals/tim/tim6.yaml
- - ../peripherals/tim/tim2_32bit.yaml
+ - ../peripherals/tim/tim2345_mixed.yaml
+ - common_patches/tim/tim2345_mixed_l.yaml
+ - ../peripherals/tim/tim_advanced.yaml
  - ../peripherals/iwdg/iwdg_with_WINR.yaml
  - ../peripherals/i2c/i2c_v2.yaml
  - ../peripherals/usart/usart_v2B1.yaml
+ - common_patches/hash/hash.yaml
+ - common_patches/rtc/rtc_bkpr.yaml
+ - common_patches/tim/tim_ccr.yaml
+ - common_patches/dbgmcu.yaml
+ - common_patches/fsmc/fsmc_sram.yaml
+ - common_patches/fsmc/fsmc_sramfix.yaml
+ - common_patches/fsmc/fsmc_nand_v2.yaml
+ - common_patches/fsmc/fsmc_sd.yaml
+ - ../peripherals/fsmc/fsmc_sram.yaml
+ - ../peripherals/fsmc/fsmc_wfdis.yaml
+ - ../peripherals/fsmc/fsmc_nand.yaml
+ - ../peripherals/fsmc/fsmc_sd.yaml
+ - ../peripherals/tim/tim_ccm_v2.yaml
+ - ../peripherals/sai/sai.yaml

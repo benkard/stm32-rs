@@ -45,6 +45,11 @@ _delete:
     _merge:
       - "FB*"
 
+# TIM3 is 16-bit, whilst TIM2 is 32-bit
+_copy:
+  TIM3:
+    from: TIM2
+
 _include:
  - common_patches/4_nvic_prio_bits.yaml
  - ./common_patches/merge_USART_CR1_DEATx_fields.yaml
@@ -57,15 +62,31 @@ _include:
  - ./common_patches/rename_LPUART_CR2_DATAINV_field.yaml
  - ./common_patches/merge_LPUART_CR2_ADDx_fields.yaml
  - ./common_patches/merge_USART_BRR_fields.yaml
+ - common_patches/can/can.yaml
+ - common_patches/can/can_filter_bank.yaml
+ - ../peripherals/can/can.yaml
+ - common_patches/sai/sai_v1.yaml
+ - common_patches/dfsdm/dfsdm_v2.yaml
  - ../peripherals/gpio/gpio_v2.yaml
  - ../peripherals/crc/crc_basic.yaml
  - ../peripherals/wwdg/wwdg.yaml
+ - ../peripherals/rcc/rcc_l4.yaml
  - ../peripherals/tim/tim_basic.yaml
  - ../peripherals/tim/tim16.yaml
  - ../peripherals/tim/tim6.yaml
- - ../peripherals/tim/tim2_32bit.yaml
+ - ../peripherals/tim/tim2345_mixed.yaml
+ - common_patches/tim/tim2345_mixed_l.yaml
+ - ../peripherals/tim/tim_advanced.yaml
  - ../peripherals/dma/dma_v1_with_remapping.yaml
  - ../peripherals/iwdg/iwdg_with_WINR.yaml
  - ../peripherals/i2c/i2c_v2.yaml
  - ../peripherals/usart/lpuart_v2A.yaml
  - ../peripherals/usart/usart_v2B2.yaml
+ - common_patches/rtc/rtc_bkpr.yaml
+ - common_patches/tsc/tsc.yaml
+ - common_patches/tim/tim_ccr.yaml
+ - ../peripherals/usb/usb_array.yaml
+ - ../peripherals/usb/usb_with_LPM.yaml
+ - ./common_patches/flash/flash_boot0s.yaml
+ - ../peripherals/tim/tim_ccm_v2.yaml
+ - ../peripherals/sai/sai.yaml

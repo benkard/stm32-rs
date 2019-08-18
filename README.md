@@ -24,7 +24,7 @@ to drill down into each field on each register on each peripheral.
 In your own project's `Cargo.toml`:
 ```toml
 [dependencies.stm32f4]
-version = "0.4.0"
+version = "0.8.0"
 features = ["stm32f405", "rt"]
 ```
 The `rt` feature is optional but helpful. See
@@ -34,7 +34,6 @@ details.
 Then, in your code:
 
 ```rust
-extern crate stm32f4;
 use stm32f4::stm32f405;
 
 let mut peripherals = stm32f405::Peripherals::take().unwrap();
@@ -50,8 +49,8 @@ devices should be supported to some level.
 
 * Install `svd2rust`: `cargo install svd2rust`
 * Install `form`: `cargo install form`
-* Install latest rustfmt: `cargo uninstall rustfmt; rustup component add rustfmt-preview`
-* Install PyYAML: `pip install pyyaml`
+* Install rustfmt: `rustup component add rustfmt`
+* Install PyYAML: `pip install --user pyyaml`
 * Unzip bundled SVD zip files: `cd svd; ./extract.sh`
 * Generate patched SVD files: `cd ..; make patch`
 * Generate svd2rust device crates: `make svd2rust` (you probably want `-j` for this)
@@ -69,7 +68,7 @@ This project serves two purposes:
   the SVD files.
 
 At present many individual crates exist for specific STM32 devices, typically
-maintained by many seprate users with hand-edited updates to the SVD files.
+maintained by many separate users with hand-edited updates to the SVD files.
 This means that support for less-common STM32s is completely missing, and
 the hand-edited SVDs may be inconsistent with other crates. Plus, it's a huge
 duplication of work, since so many peripherals are the same between devices.
@@ -103,6 +102,8 @@ This project is still young and there's a lot to do!
 * [STM32L1](stm32l1/) [![crates.io](https://img.shields.io/crates/v/stm32l1.svg)](https://crates.io/crates/stm32l1)
 * [STM32L4](stm32l4/) [![crates.io](https://img.shields.io/crates/v/stm32l4.svg)](https://crates.io/crates/stm32l4)
 * [STM32H7](stm32h7/) [![crates.io](https://img.shields.io/crates/v/stm32h7.svg)](https://crates.io/crates/stm32h7)
+* [STM32G0](stm32g0/) [![crates.io](https://img.shields.io/crates/v/stm32g0.svg)](https://crates.io/crates/stm32g0)
+* [STM32G4](stm32g4/) [![crates.io](https://img.shields.io/crates/v/stm32g4.svg)](https://crates.io/crates/stm32g4)
 
 Please see the individual crate READMEs for the full list of devices each crate
 supports. All SVDs released by ST for STM32 devices are covered, so probably
@@ -151,7 +152,7 @@ fields with names ending in 'E' or 'D' it additionally generates sample
 The patch specifications are in YAML and have the following general format:
 
 ```yaml
-# Path to the SVD file we're targetting. Relative to this file.
+# Path to the SVD file we're targeting. Relative to this file.
 # This must be included only in the device YAML file.
 _svd: "../svd/STM32F0x0.svd"
 
@@ -203,11 +204,41 @@ _add:
                 description: ADC global interrupt
                 value: 18
 
-# Reorder the heirarchy of peripherals with 'deriveFrom'.
+# A whole new peripheral can also be created as derivedFrom another peripheral.
+_add:
+    USART3:
+        derivedFrom: USART1
+        baseAddress: "0x40004800"
+        interrupts:
+            USART3:
+                description: USART3 global interrupt
+                value: 39
+
+# A new peripheral can have all its registers copied from another, in case
+# it cannot quite be derivedFrom (e.g. some fields need different enumerated
+# values) but it's otherwise almost exactly the same.
+# The registers are copied but not name or address or interrupts.
+_copy:
+    ADC3:
+        from: ADC2
+
+# Replace peripheral registers by a 'deriveFrom'.
+# This is used when e.g. UART4 and UART5 are both independently defined,
+# but you'd like to make UART5 be defined as derivedFrom UART4 instead.
+_derive:
+    # The KEY peripheral looses all its elements but 'interrupt', 'name',
+    # and 'baseAddress', and it is derivedFrom the VALUE peripheral.
+    # Peripherals that were 'deriveFrom="KEY"' are now 'deriveFrom="VALUE"'.
+    UART5: UART4
+
+# Reorder the hierarchy of peripherals with 'deriveFrom'.
+# This is used when e.g. I2C1 is marked as derivedFrom I2C3,
+# but you'd like to swap that so that I2C3 becomes derivedFrom I2C1.
 _rebase:
     # The KEY peripheral steals everything but 'interrupt', 'name',
     # and 'baseAddress' elements from the VALUE peripheral.
     # Peripherals that were 'deriveFrom="VALUE"' are now 'deriveFrom="KEY"'.
+    # The VALUE peripheral is marked as derivedFrom the updated KEY.
     I2C1: I2C3
 
 # An STM32 peripheral, matches an SVD <peripheral> tag.
@@ -256,10 +287,44 @@ _rebase:
                 value: 100
 
     # Anywhere you can '_add' something, you can also '_delete' it.
-    # Wildcards are supported. Note that the value here is a YAML list,
-    # not a mapping like for most other keys.
+    # Wildcards are supported. The value here can be a YAML list of registers
+    # to delete (supported for backwards compatibility), or a YAML mapping
+    # of lists of registers or interrupts.
     _delete:
-        - GPIO*_EXTRAR
+        GPIO*_EXTRAR:
+        _registers:
+            - GPIO*_EXAMPLER
+        _interrupts:
+            - USART1
+
+    # If registers have unnecessary common prefix,
+    # you can clean it in all registers in peripheral by:
+    _strip:
+        - PREFIX_
+
+    # You can collect several same registers into one register array
+    # that will be represented with svd2rust as array or elements
+    # with one type
+    # Minimal version:
+    _array:
+        ARRAY*: {}
+
+    # You can also use the modifiers shown below:
+    _array:
+        ARRAY*:
+            name: NEW_NAME%s
+            _modify:
+                FIELD: [MINIMUM, MAXIMUM]
+                FIELD:
+                  description: NEWDESC
+        OTHER_ARRAY*: {}
+
+    # If you have registers that make up a group and can be repeated,
+    # you can collect them into cluster like this:
+    _cluster:
+        CLUSTER%s:
+            FIRST_REG: {}
+            SECOND_REG: {}
 
     # A register on this peripheral, matches an SVD <register> tag
     MODER:
@@ -293,7 +358,7 @@ _rebase:
         # Another field. A list of two numbers gives a range writeConstraint.
         FIELD: [MINIMUM, MAXIMUM]
 
-        # Another field with separate enumuerated values for read and write
+        # Another field with separate enumerated values for read and write
         FIELD:
             _read:
                 VARIANT: [VALUE, DESCRIPTION]
@@ -327,17 +392,18 @@ You must quote the name if using any special characters in YAML.
 
 ```
 $ make -j16 form
-$ make -j16 check
+$ env CARGO_INCREMENTAL=0 make -j12 check
 $ vi scripts/makecrates.py # update version number
 $ python3 scripts/makecrates.py devices/
 $ vi CHANGELOG.md # add changelog entry
+$ vi README.md # update version number
+$ git checkout -b vX.X.X
 $ git commit -am "vX.X.X"
-$ git push origin master
+$ git push origin vX.X.X
 # wait for travis build to succeed
 $ git tag -a 'vX.X.X' -m 'vX.X.X'
 $ git push origin vX.X.X
-$ git push origin master
-$ for f in stm32f0 stm32f1 stm32f2 stm32f3 stm32f4 stm32f7 stm32h7 stm32l0 stm32l1 stm32l4; cd $f; pwd; carg o publish --allow-dirty; cd ..; end
+$ for f in stm32f0 stm32f1 stm32f2 stm32f3 stm32f4 stm32f7 stm32h7 stm32l0 stm32l1 stm32l4 stm32g0 stm32g4; cd $f; pwd; cargo publish --allow-dirty; cd ..; end
 ```
 
 ## License

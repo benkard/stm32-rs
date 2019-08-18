@@ -1,39 +1,45 @@
 _svd: ../svd/stm32f0x0.svd
 
 RCC:
-  APB2RSTR:
-    _add:
-      USART6RST:
-        description: "USART6 reset"
-        bitOffset: 5
-        bitWidth: 1
   AHBENR:
     _add:
       IOPDEN:
         description: "I/O port D clock enable"
         bitOffset: 20
         bitWidth: 1
-      DMAEN:
-        description: "DMA clock enable"
-        bitOffset: 0
+  CFGR:
+    _modify:
+      PLLSRC:
+        bitOffset: 16
         bitWidth: 1
-  APB2ENR:
-    _add:
-      USART6EN:
-        description: "USART6 clock enable"
-        bitOffset: 5
-        bitWidth: 1
+
+SPI1:
+  SR:
+    _delete:
+      - CHSIDE
+      - UDR
 
 _include:
  - ./common_patches/rename_RCC_CIR_HSI14RDYIE_field.yaml
+ - ./common_patches/rename_f0_SPI_registers.yaml
  - ./common_patches/merge_I2C_CR2_SADDx_fields.yaml
  - ./common_patches/merge_I2C_OAR1_OA1x_fields.yaml
+ - ./common_patches/f0_no_hdmi_cec.yaml
+ - ./common_patches/f0_v18pwrrstf.yaml
  - ./common_patches/f0_adc_cfgr2_ckmode.yaml
+ - ./common_patches/f0_adc_fixes.yaml
+ - ./common_patches/f0_usart3.yaml
+ - ./common_patches/f0_usart6.yaml
+ - ./common_patches/f0_dmaen.yaml
+ - ./common_patches/f0_usben.yaml
+ - ./common_patches/f0_hsi48cal.yaml
+ - ./common_patches/f0_syscfg.yaml
  - ./common_patches/merge_USART_CR2_ADDx_fields.yaml
  - ./common_patches/rename_USART_CR1_M0_field.yaml
- - common_patches/merge_USART_BRR_fields.yaml
+ - ./common_patches/merge_USART_BRR_fields.yaml
  - ../peripherals/tim/tim_basic.yaml
- - ../peripherals/tim/tim2_32bit.yaml
+ - ../peripherals/tim/tim2345_16bit.yaml
+ - common_patches/tim/tim2345_16bit_l.yaml
  - ../peripherals/gpio/gpio_v2.yaml
  - ../peripherals/gpio/gpio_with_brr.yaml
  - ../peripherals/crc/crc_advanced.yaml
@@ -43,7 +49,18 @@ _include:
  - ../peripherals/iwdg/iwdg_with_WINR.yaml
  - ../peripherals/tim/tim16.yaml
  - ../peripherals/tim/tim6.yaml
- - ../peripherals/rcc/rcc_f0.yaml
+ - ../peripherals/rcc/rcc_f0x0.yaml
+ - common_patches/dma/dma_v1.yaml
  - ../peripherals/dma/dma_v1.yaml
  - ../peripherals/i2c/i2c_v2.yaml
  - ../peripherals/usart/usart_v2B1.yaml
+ - common_patches/rtc/rtc_bkpr.yaml
+ - ../peripherals/syscfg/syscfg_f0.yaml
+ - ../peripherals/adc/adc_aditf4_v1_1.yaml
+ - ../peripherals/spi/spi_v2_without_UDR_CHSIDE.yaml
+ - common_patches/tim/tim_ccr.yaml
+ - ../peripherals/usb/usb_with_LPM.yaml
+ - common_patches/f0_ram_parity_check.yaml
+ - ../peripherals/flash/flash_f0.yaml
+ - ../peripherals/tim/tim_ccm_v1.yaml
+ 

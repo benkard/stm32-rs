@@ -1,19 +1,92 @@
 _svd: ../svd/stm32f373.svd
 
+RCC:
+  APB2RSTR:
+    _modify:
+      SDAD1RST:
+        name: SDADC1RST
+      SDAD2RST:
+        name: SDADC2RST
+      SDAD3RST:
+        name: SDADC3RST
+  APB2ENR:
+    _delete:
+      - TIM1EN
+    _modify:
+      SDAD1EN:
+        name: SDADC1EN
+      SDAD2EN:
+        name: SDADC2EN
+      SDAD3EN:
+        name: SDADC3EN
+
+SYSCFG:
+  _delete:
+    - SYSCFG_RCR
+    - SYSCFG_CFGR3
+  CFGR1:
+    _delete:
+      - USB_IT_RMP
+      - TIM1_ITR_RMP
+      - DAC_TRIG_RMP
+      - ADC24_DMA_RMP
+      - ENCODER_MODE
+    _add:
+      VBAT_MON:
+        description: VBAT monitoring enable
+        bitOffset: 24
+        bitWidth: 1
+        access: read-write
+  CFGR2:
+    _delete:
+      - BYP_ADD_PAR
+
+COMP:
+  CSR:
+    _add:
+      COMP1_INP_DAC:
+        description: Comparator 1 non inverting input connection to DAC output
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+
 _include:
  - common_patches/4_nvic_prio_bits.yaml
  - ./common_patches/merge_I2C_CR2_SADDx_fields.yaml
  - ./common_patches/merge_I2C_OAR1_OA1x_fields.yaml
  - ./common_patches/merge_USART_CR2_ADDx_fields.yaml
  - ./common_patches/merge_USART_BRR_fields.yaml
+ - ./common_patches/f3_rcc.yaml
+ - ./common_patches/f3_rcc_usb.yaml
+ - ./common_patches/f3_rcc_dac3_dac2.yaml
+ - ./common_patches/f3_syscfg.yaml
+ - ./common_patches/f3_syscfg_cfgr2.yaml
+ - ./common_patches/f0_comp_common.yaml
+ - common_patches/can/can.yaml
+ - common_patches/can/can_filter_bank.yaml
+ - ../peripherals/can/can.yaml
+ - ./common_patches/unprefix_USB_registers.yaml
+ - common_patches/tim/tim_o24ce.yaml
  - ../peripherals/crc/crc_basic.yaml
+ - ../peripherals/spi/spi_v2.yaml
  - ../peripherals/wwdg/wwdg.yaml
  - ../peripherals/gpio/gpio_with_brr.yaml
  - ../peripherals/tim/tim_basic.yaml
  - ../peripherals/tim/tim16.yaml
  - ../peripherals/tim/tim6.yaml
- - ../peripherals/tim/tim2_32bit.yaml
+ - ../peripherals/tim/tim2345_mixed.yaml
+ - common_patches/tim/tim2345_mixed.yaml
+ - ../peripherals/rcc/rcc_f373.yaml
+ - ../peripherals/rcc/rcc_pllsrc_1bit.yaml
+ - ../peripherals/rcc/rcc_f1_f3_usb.yaml
+ - common_patches/dma/dma_v1.yaml
  - ../peripherals/dma/dma_v1.yaml
  - ../peripherals/iwdg/iwdg_with_WINR.yaml
  - ../peripherals/i2c/i2c_v2.yaml
  - ../peripherals/usart/usart_v2B.yaml
+ - common_patches/rtc/rtc_bkpr.yaml
+ - common_patches/tsc/tsc.yaml
+ - common_patches/tim/tim_ccr.yaml
+ - ../peripherals/usb/usb.yaml
+ - common_patches/f3_dbgmcu.yaml
+ - ../peripherals/tim/tim_ccm_v1.yaml

@@ -17,8 +17,8 @@ def main():
     parser.add_argument("devices", nargs="*")
     args = parser.parse_args()
     for dpath in args.devices:
-        with open(dpath) as f:
-            device = yaml.load(f)
+        with open(dpath, encoding='utf-8') as f:
+            device = yaml.safe_load(f)
         device["_path"] = dpath
         deps = svdpatch.yaml_includes(device)
         depname = ".deps/{}.d".format(

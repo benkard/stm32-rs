@@ -7,9 +7,14 @@ Generates a webpage for a given SVD file containing details on every
 peripheral and register and their level of coverage.
 """
 
+import shutil
+import sys
 import os.path
 import argparse
-import multiprocessing
+if sys.platform == 'win32':
+    import multiprocessing.pool
+else:
+    import multiprocessing
 import xml.etree.ElementTree as ET
 from jinja2 import Environment, PackageLoader
 
@@ -26,8 +31,12 @@ def generate_device_page(device):
     template = env.get_template('makehtml.template.html')
     return template.render(device=device)
 
+
 def short_access(accs):
-    return {"read-write": "rw", "read-only" : "r", "write-only" :"w"}.get(accs, "N/A")
+    return {
+        "read-write": "rw", "read-only": "r", "write-only": "w"
+    }.get(accs, "N/A")
+
 
 def parse_device(svdfile):
     tree = ET.parse(svdfile)
@@ -65,8 +74,18 @@ def parse_device(svdfile):
                 register_fields_total += 1
                 fname = ftag.findtext('name')
                 fdesc = ftag.findtext('description')
-                foffset = int(ftag.findtext('bitOffset'))
-                fwidth = int(ftag.findtext('bitWidth'))
+                # Some svd files will specify a bitRange rather than
+                # bitOffset and bitWidth
+                frange = ftag.findtext('bitRange')
+                if frange:
+                    parts = frange[1:-1].split(':')
+                    end = int(parts[0])
+                    start = int(parts[1])
+                    foffset = start
+                    fwidth = end - start + 1
+                else:
+                    foffset = int(ftag.findtext('bitOffset'))
+                    fwidth = int(ftag.findtext('bitWidth'))
                 faccs = ftag.findtext('access') or raccs
                 enum = ftag.find('enumeratedValues')
                 wc = ftag.find('writeConstraint')
@@ -127,7 +146,8 @@ def parse_device(svdfile):
             # Bodge to prevent /0 when there are no fields in a register
             if register_fields_total == 0:
                 register_fields_total = 1
-            registers[roffset] = {"name": rname, "offset": "0x{:X}".format(roffset),
+            registers[roffset] = {"name": rname,
+                                  "offset": "0x{:X}".format(roffset),
                                   "description": rdesc, "resetValue": rrstv,
                                   "access": raccs, "fields": fields,
                                   "table": table,
@@ -146,7 +166,7 @@ def parse_device(svdfile):
     return {"name": dname, "peripherals": peripherals,
             "fields_total": device_fields_total,
             "fields_documented": device_fields_documented,
-            "last-modified": temp}
+            "last-modified": temp, "svdfile": svdfile}
 
 
 def process_svd(svdfile):
@@ -164,6 +184,7 @@ def generate_if_newer(device):
         print("Generating", pagename)
         with open(filename, "w") as f:
             f.write(page)
+        shutil.copy(device["svdfile"], args.htmldir)
 
 
 if __name__ == "__main__":
@@ -172,9 +193,10 @@ if __name__ == "__main__":
     parser.add_argument("svdfiles", help="Path to patched SVD files", nargs="*")
     args = parser.parse_args()
     devices = {}
-    with multiprocessing.Pool() as p:
-         devices = p.map(process_svd, args.svdfiles)
-         p.map(generate_if_newer, devices)
+
+    with multiprocessing.pool.ThreadPool() if sys.platform == 'win32' else multiprocessing.Pool() as p:
+        devices = p.map(process_svd, args.svdfiles)
+        p.map(generate_if_newer, devices)
     devices = {d['name']: d for d in devices}
     index_page = generate_index_page(devices)
     with open(os.path.join(args.htmldir, "index.html"), "w") as f:
