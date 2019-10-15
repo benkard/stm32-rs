@@ -1,5 +1,10 @@
 _svd: ../svd/stm32h747cm7.svd
 
+# Applies to the H745/H747 (no cryp)
+
+_delete:
+  - CRYP  # Not present on H745/H747
+
 _include:
  - common_patches/h7_common_dualcore.yaml
  - common_patches/4_nvic_prio_bits.yaml
@@ -13,6 +18,8 @@ _include:
  - common_patches/h7_dsi.yaml
  - common_patches/h7_adc_boost_rev_v.yaml
  - common_patches/h7_dualcore_flash.yaml
+ - common_patches/h7_hsicfgr_csicfgr_rev_v.yaml
+ - common_patches/h7_sai.yaml
  - common_patches/flash/flash_dual_bank.yaml
  - common_patches/ltdc/ltdc.yaml
  - common_patches/merge_I2C_CR2_SADDx_fields.yaml
@@ -23,16 +30,11 @@ _include:
  - common_patches/rename_USART_CR2_DATAINV_field.yaml
  - common_patches/merge_USART_BRR_fields.yaml
  - common_patches/tim/tim_o24ce.yaml
- # ADC Common registers are mixed in with ADC registers in the
- # SVD. TODO: Resolve manually.
- #- ../peripherals/adc/adc_v3_multi.yaml
+ - ../peripherals/adc/adc_v3_h7.yaml
+ - ../peripherals/adc/adc_v3_common_h7.yaml
  - ../peripherals/adc/adc_h7_revision_v.yaml
  - ../peripherals/crc/crc_basic.yaml
- # This peripheral cannot be processed due to the behaviour of
- # svdpatch.py. There are _strip and _array operations on DMAMUX prior
- # to this, but they are not applied to DMAMUX1 prior to processing
- # the peripheral.
- #- ../peripherals/dma/dmamux_v1.yaml
+ - ../peripherals/dma/dmamux_v1.yaml
  - ../peripherals/gpio/gpio_v2.yaml
  - ../peripherals/lptim/lptim_v1.yaml
  - ../peripherals/rcc/rcc_h7.yaml
